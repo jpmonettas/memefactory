@@ -54,6 +54,8 @@
                  [district0x/district-format "1.0.1"]
                  [district0x/district-time "1.0.0"]
                  [district0x/re-frame-ipfs-fx "0.0.2"]
+                 [day8.re-frame/http-fx "0.1.6"]
+                 [cljs-ajax "0.7.4"]
                  [district0x/cljs-ipfs-native "0.0.5-SNAPSHOT"]
                  [district0x/district-ui-component-form "0.1.11-SNAPSHOT"]
                  [medley "1.0.0"]

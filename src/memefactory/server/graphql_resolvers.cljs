@@ -900,6 +900,10 @@
                                         :order-by [[:param-changes.param-change/applied-on :asc]]
                                         :limit 2}))))
 
+(defn send-phone-code-resolver [_ {:keys [:phone-number :code] :as args}]
+  (log/info (str "Sending " code " to " phone-number))
+  42)
+
 (def resolvers-map
   {:Query {:meme meme-query-resolver
            :search-memes search-memes-query-resolver
@@ -915,6 +919,7 @@
            :params params-query-resolver
            :overall-stats overall-stats-resolver
            :config config-query-resolver}
+   :Mutation {:send-phone-code send-phone-code-resolver}
    :Vote {:vote/option vote->option-resolver
           :vote/reward vote->reward-resolver}
    :Meme {:reg-entry/status reg-entry->status-resolver

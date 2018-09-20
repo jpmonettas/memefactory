@@ -66,6 +66,10 @@
     config: Config
   }
 
+  type Mutation {
+    sendPhoneCode(phoneNumber: String, code: String): Int
+  }
+
   enum OrderDir {
     asc
     desc
@@ -412,5 +416,5 @@
     endpoint: String
     gateway: String
   }
-"
+  "
   )
