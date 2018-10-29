@@ -3,6 +3,7 @@ pragma solidity ^0.4.24;
 import "RegistryEntry.sol";
 import "MemeToken.sol";
 import "./DistrictConfig.sol";
+import "FactsDb.sol";
 
 /**
  * @title Contract created for each submitted Meme into the MemeFactory TCR.
@@ -17,6 +18,7 @@ contract Meme is RegistryEntry {
 
   DistrictConfig private constant districtConfig = DistrictConfig(0xABCDabcdABcDabcDaBCDAbcdABcdAbCdABcDABCd);
   MemeToken private constant memeToken = MemeToken(0xdaBBdABbDABbDabbDaBbDabbDaBbdaBbdaBbDAbB);
+  FactsDb internal constant factsDb = FactsDb(0xaaffaaffaaffaaffaaffaaffaaffaaffaaffaaff);
   bytes private metaHash;
   uint private tokenIdStart;
   uint private totalSupply;
@@ -48,12 +50,15 @@ contract Meme is RegistryEntry {
     totalSupply = _totalSupply;
     metaHash = _metaHash;
 
+    factsDb.transactUInt(uint(this), "meme/total-supply", version);
+
     registry.fireMemeConstructedEvent(version,
                                       _creator,
                                       metaHash,
                                       totalSupply,
                                       deposit,
                                       challenge.challengePeriodEnd);
+
   }
 
   /**
@@ -87,7 +92,12 @@ contract Meme is RegistryEntry {
     for (uint i = tokenIdStart; i < tokenIdEnd; i++) {
       memeToken.mint(creator, i);
       totalMinted = totalMinted + 1;
+      factsDb.transactUInt(uint(keccak256(abi.encodePacked("token/id", i))), "token/id", i);
     }
+
+    factsDb.transactUInt(uint(this), "meme/total-minted", totalMinted);
+    factsDb.transactUInt(uint(this), "meme/token-id-start", tokenIdStart);
+    factsDb.transactUInt(uint(this), "meme/token-id-end", tokenIdEnd);
 
     registry.fireMemeMintedEvent(version,
                                  creator,

@@ -15,6 +15,8 @@ contract MemeAuction is ERC721Receiver {
   Registry public constant registry = Registry(0xfEEDFEEDfeEDFEedFEEdFEEDFeEdfEEdFeEdFEEd);
   MemeToken public constant memeToken = MemeToken(0xdaBBdABbDABbDabbDaBbDabbDaBbdaBbdaBbDAbB);
   MemeAuctionFactory public constant memeAuctionFactory = MemeAuctionFactory(0xdAFfDaFfDAfFDAFFDafFdAfFdAffdAffDAFFdAFF);
+  FactsDb internal constant factsDb = FactsDb(0xaaffaaffaaffaaffaaffaaffaaffaaffaaffaaff);
+
   address public seller;
   uint public tokenId;
   uint public startPrice;
@@ -54,6 +56,14 @@ contract MemeAuction is ERC721Receiver {
     endPrice = _endPrice;
     duration = _duration;
     startedOn = now;
+
+    uint tokenFactId=uint(keccak256(abi.encodePacked("token/id", tokenId)));
+    factsDb.transactUInt(uint(this), "auction/token-id", tokenFactId);
+    factsDb.transactAddress(uint(this), "auction/seller", seller);
+    factsDb.transactUInt(uint(this), "auction/startPrice", startPrice);
+    factsDb.transactUInt(uint(this), "auction/endPrice", endPrice);
+    factsDb.transactUInt(uint(this), "auction/duration", duration);
+
     memeAuctionFactory.fireMemeAuctionStartedEvent(tokenId,
                                                    seller,
                                                    startPrice,
@@ -90,6 +100,11 @@ contract MemeAuction is ERC721Receiver {
       }
     }
     memeToken.safeTransferFrom(this, msg.sender, tokenId);
+
+    factsDb.transactAddress(uint(this), "auction/buyer", msg.sender);
+    factsDb.transactUInt(uint(this), "auction/price", price);
+    factsDb.transactUInt(uint(this), "auction/auctioneer-cut", auctioneerCut);
+    factsDb.transactUInt(uint(this), "auction/seller-proceeds", sellerProceeds);
 
     memeAuctionFactory.fireMemeAuctionBuyEvent(msg.sender,
                                                price,

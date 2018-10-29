@@ -24,6 +24,7 @@
 (def district-config-placeholder "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd")
 (def meme-token-placeholder "dabbdabbdabbdabbdabbdabbdabbdabbdabbdabb")
 (def meme-auction-factory-placeholder "daffdaffdaffdaffdaffdaffdaffdaffdaffdaff")
+(def facts-db-placeholder "aaffaaffaaffaaffaaffaaffaaffaaffaaffaaff")
 
 (defn deploy-dank-token! [default-opts]
   (deploy-smart-contract! :DANK (merge default-opts {:gas 2200000
@@ -45,6 +46,10 @@
                                                                 :arguments [deposit-collector
                                                                             meme-auction-cut-collector
                                                                             meme-auction-cut]})))
+
+(defn deploy-facts-db! [default-opts]
+  (deploy-smart-contract! :facts-db (merge default-opts {:gas 1000000
+                                                         :arguments []})))
 
 (defn deploy-meme-registry-db! [default-opts]
   (deploy-smart-contract! :meme-registry-db (merge default-opts {:gas #_1700000 2000000})))
@@ -76,6 +81,7 @@
                                                      {dank-token-placeholder :DANK
                                                       registry-placeholder :meme-registry-fwd
                                                       district-config-placeholder :district-config
+                                                      facts-db-placeholder :facts-db
                                                       meme-token-placeholder :meme-token}})))
 
 (defn deploy-param-change! [default-opts]
@@ -118,7 +124,8 @@
                                                              {meme-auction-factory-placeholder :meme-auction-factory-fwd
                                                               registry-placeholder :meme-registry-fwd
                                                               district-config-placeholder :district-config
-                                                              meme-token-placeholder :meme-token}})))
+                                                              meme-token-placeholder :meme-token
+                                                              facts-db-placeholder :facts-db}})))
 
 (defn deploy [{:keys [:write? :initial-registry-params :transfer-dank-token-to-accounts
                       :use-n-account-as-deposit-collector :use-n-account-as-cut-collector]
@@ -138,6 +145,7 @@
      (deploy-minime-token-factory! deploy-opts)
      (deploy-dank-token! deploy-opts)
      (deploy-district-config! deploy-opts)
+     (deploy-facts-db! deploy-opts)
      (ds-auth/set-authority :district-config (contract-address :ds-guard) deploy-opts)
 
      (deploy-meme-registry-db! deploy-opts)

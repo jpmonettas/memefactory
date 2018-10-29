@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "Registry.sol";
+import "FactsDb.sol";
 import "token/minime/MiniMeToken.sol";
 import "math/SafeMath.sol";
 import "registryentry/RegistryEntryLib.sol";
@@ -19,6 +20,7 @@ contract RegistryEntry is ApproveAndCallFallBack {
   using RegistryEntryLib for RegistryEntryLib.Challenge;
 
   Registry internal constant registry = Registry(0xfEEDFEEDfeEDFEedFEEdFEEDFeEdfEEdFeEdFEEd);
+  FactsDb internal constant factsDb = FactsDb(0xaaffaaffaaffaaffaaffaaffaaffaaffaaffaaff);
   MiniMeToken internal constant registryToken = MiniMeToken(0xDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaDDeaD);
 
   address internal creator;
@@ -66,6 +68,11 @@ contract RegistryEntry is ApproveAndCallFallBack {
 
     creator = _creator;
     version = _version;
+
+    factsDb.transactAddress(uint(this), "reg-entry/address", address(this));
+    factsDb.transactUInt(uint(this), "reg-entry/challenge-period-end", challenge.challengePeriodEnd);
+    factsDb.transactUInt(uint(this), "reg-entry/deposit", deposit);
+
   }
 
   /**
@@ -99,12 +106,22 @@ contract RegistryEntry is ApproveAndCallFallBack {
     challenge.rewardPool = uint(100).sub(registry.db().getUIntValue(registry.challengeDispensationKey())).mul(deposit).div(uint(100));
     challenge.metaHash = _challengeMetaHash;
 
+    uint challengeId = uint(keccak256(abi.encodePacked(uint(this),"challenge")));
+
+    factsDb.transactUInt(uint(this), "reg-entry/challenge", challengeId);
+    factsDb.transactAddress(challengeId, "challenge/challenger", challenge.challenger);
+    factsDb.transactUInt(challengeId, "challenge/commit-period-end",challenge.commitPeriodEnd);
+    factsDb.transactUInt(challengeId, "challenge/reveal-period-end",challenge.revealPeriodEnd);
+    factsDb.transactUInt(challengeId, "challenge/reward-pool",challenge.rewardPool);
+    factsDb.transactBytes(challengeId, "challenge/meta-hash",challenge.metaHash);
+
     registry.fireChallengeCreatedEvent(version,
                                        challenge.challenger,
                                        challenge.commitPeriodEnd,
                                        challenge.revealPeriodEnd,
                                        challenge.rewardPool,
                                        challenge.metaHash);
+
   }
 
   /**
@@ -133,9 +150,13 @@ contract RegistryEntry is ApproveAndCallFallBack {
     challenge.vote[_voter].secretHash = _secretHash;
     challenge.vote[_voter].amount += _amount;
 
-    registry.fireVoteCommittedEvent(version,
-                                    _voter,
-                                    challenge.vote[_voter].amount);
+    uint challengeId = uint(keccak256(abi.encodePacked(uint(this),"challenge")));
+    uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
+
+    factsDb.transactUInt(challengeId, "challenge/vote", voteId);
+    factsDb.transactUInt(voteId, "vote/amount", challenge.vote[_voter].amount);
+    factsDb.transactAddress(voteId, "vote/voter", _voter);
+
   }
 
   /**
@@ -171,6 +192,11 @@ contract RegistryEntry is ApproveAndCallFallBack {
       revert();
     }
 
+    uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
+
+    factsDb.transactUInt(voteId, "vote/option", uint(challenge.vote[_voter].option));
+    factsDb.transactUInt(voteId, "vote/revealed-on", now);
+
     registry.fireVoteRevealedEvent(version,
                                    _voter,
                                    uint(challenge.vote[_voter].option));
@@ -200,6 +226,9 @@ contract RegistryEntry is ApproveAndCallFallBack {
     require(registryToken.transfer(_voter, amount));
 
     challenge.vote[_voter].reclaimedVoteAmountOn = now;
+
+    uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
+    factsDb.transactUInt(voteId, "vote/reclaimed-amount-on", now);
 
     registry.fireVoteAmountClaimedEvent(version, _voter);
   }
@@ -234,6 +263,9 @@ contract RegistryEntry is ApproveAndCallFallBack {
     require(registryToken.transfer(_voter, reward));
     challenge.vote[_voter].claimedRewardOn = now;
 
+    uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
+    factsDb.transactUInt(voteId, "vote/reclaimed-reward-on", now);
+
     registry.fireVoteRewardClaimedEvent(version,
                                         _voter,
                                         reward);
@@ -254,6 +286,11 @@ contract RegistryEntry is ApproveAndCallFallBack {
     require(registryToken.transfer(challenge.challenger, challenge.challengeReward(deposit)));
 
     challenge.claimedRewardOn = now;
+
+    uint challengeId = uint(keccak256(abi.encodePacked(uint(this),"challenge")));
+
+    factsDb.transactUInt(challengeId, "challenge/reclaimed-reward-on", now);
+    factsDb.transactUInt(challengeId, "challenge/reclaimed-amount", challenge.challengeReward(deposit));
 
     registry.fireChallengeRewardClaimedEvent(version,
                                              challenge.challenger,

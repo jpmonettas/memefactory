@@ -136,6 +136,7 @@
                                               :print-gas-usage? true
                                               :auto-mining? false}
                             :ranks-cache {:ttl (t/in-millis (t/minutes 60))}}}})
+      (mount/except [#'memefactory.server.syncer/syncer])
       (mount/start)
       pprint/pprint))
 
