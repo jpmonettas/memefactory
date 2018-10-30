@@ -18,11 +18,11 @@
   [contract-addr]
   (parse-status (contract-call [:meme contract-addr] :status)))
 
-(defn create-challenge [contract-addr {:keys [:challenger :meta-hash]} & [opts]]
-  (contract-call (instance :meme contract-addr) :create-challenge challenger meta-hash (merge {:gas 1200000} opts)))
+(defn create-challenge [contract-addr {:keys [:challenger :reason]} & [opts]]
+  (contract-call (instance :meme contract-addr) :create-challenge challenger reason (merge {:gas 1200000} opts)))
 
-(defn create-challenge-data [{:keys [:challenger :meta-hash]}]
-  (web3-eth/contract-get-data (instance :meme) :create-challenge challenger meta-hash))
+(defn create-challenge-data [{:keys [:challenger :reason]}]
+  (web3-eth/contract-get-data (instance :meme) :create-challenge challenger reason))
 
 (defn approve-and-create-challenge [contract-addr {:keys [:amount] :as args} & [opts]]
   (dank-token/approve-and-call {:spender contract-addr

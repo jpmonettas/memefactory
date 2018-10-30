@@ -28,18 +28,12 @@ contract Meme is RegistryEntry {
    * @dev Constructor for this contract.
    * Native constructor is not used, because users create only forwarders pointing into single instance of this contract,
    * therefore constructor must be called explicitly.
-
-   * @param _creator Creator of a meme
-   * @param _version Version of Meme contract
-   * @param _metaHash IPFS hash of meta data related to a meme
-   * @param _totalSupply This meme's token total supply
    */
-  function construct(
-                     address _creator,
+  function construct(address _creator,
                      uint _version,
-                     bytes _metaHash,
-                     uint _totalSupply
-                     )
+                     bytes _imageHash,
+                     uint _totalSupply,
+                     string _title)
     external
   {
     super.construct(_creator, _version);
@@ -48,13 +42,15 @@ contract Meme is RegistryEntry {
     require(_totalSupply <= registry.db().getUIntValue(registry.maxTotalSupplyKey()));
 
     totalSupply = _totalSupply;
-    metaHash = _metaHash;
+
 
     factsDb.transactUInt(uint(this), "meme/total-supply", version);
+    factsDb.transactString(uint(this), "meme/title", _title);
+    factsDb.transactBytes(uint(this), "meme/image-hash", _imageHash);
 
     registry.fireMemeConstructedEvent(version,
                                       _creator,
-                                      metaHash,
+                                      "",
                                       totalSupply,
                                       deposit,
                                       challenge.challengePeriodEnd);

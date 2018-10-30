@@ -26,8 +26,9 @@ contract MemeFactory is RegistryEntryFactory {
    */
   function createMeme(
     address _creator,
-    bytes _metaHash,
-    uint _totalSupply
+    bytes _imageHash,
+    uint _totalSupply,
+    string _title
   )
   public
   {
@@ -36,8 +37,9 @@ contract MemeFactory is RegistryEntryFactory {
     meme.construct(
       _creator,
       version,
-      _metaHash,
-      _totalSupply
+      _imageHash,
+      _totalSupply,
+      _title
     );
   }
 }

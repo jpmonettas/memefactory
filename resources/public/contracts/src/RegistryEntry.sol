@@ -69,6 +69,7 @@ contract RegistryEntry is ApproveAndCallFallBack {
     creator = _creator;
     version = _version;
 
+    factsDb.transactAddress(uint(_creator), "user/created", address(this));
     factsDb.transactAddress(uint(this), "reg-entry/address", address(this));
     factsDb.transactUInt(uint(this), "reg-entry/challenge-period-end", challenge.challengePeriodEnd);
     factsDb.transactUInt(uint(this), "reg-entry/deposit", deposit);
@@ -81,13 +82,10 @@ contract RegistryEntry is ApproveAndCallFallBack {
    * Entry can be challenged only once
    * Transfers token deposit from challenger into this contract
    * Forks registry token (DankToken) in order to create single purpose voting token to vote about this challenge
-
-   * @param _challenger Address of a challenger
-   * @param _challengeMetaHash IPFS hash of meta data related to this challenge
    */
   function createChallenge(
                            address _challenger,
-                           bytes _challengeMetaHash
+                           string _challengeReason
                            )
     external
     notEmergency
@@ -104,23 +102,17 @@ contract RegistryEntry is ApproveAndCallFallBack {
     challenge.commitPeriodEnd = now.add(commitDuration);
     challenge.revealPeriodEnd = challenge.commitPeriodEnd.add(revealDuration);
     challenge.rewardPool = uint(100).sub(registry.db().getUIntValue(registry.challengeDispensationKey())).mul(deposit).div(uint(100));
-    challenge.metaHash = _challengeMetaHash;
 
     uint challengeId = uint(keccak256(abi.encodePacked(uint(this),"challenge")));
 
+    factsDb.transactAddress(uint(_challenger), "user/challenged", address(this));
     factsDb.transactUInt(uint(this), "reg-entry/challenge", challengeId);
     factsDb.transactAddress(challengeId, "challenge/challenger", challenge.challenger);
     factsDb.transactUInt(challengeId, "challenge/commit-period-end",challenge.commitPeriodEnd);
     factsDb.transactUInt(challengeId, "challenge/reveal-period-end",challenge.revealPeriodEnd);
     factsDb.transactUInt(challengeId, "challenge/reward-pool",challenge.rewardPool);
-    factsDb.transactBytes(challengeId, "challenge/meta-hash",challenge.metaHash);
+    factsDb.transactString(challengeId, "challenge/reason",_challengeReason);
 
-    registry.fireChallengeCreatedEvent(version,
-                                       challenge.challenger,
-                                       challenge.commitPeriodEnd,
-                                       challenge.revealPeriodEnd,
-                                       challenge.rewardPool,
-                                       challenge.metaHash);
 
   }
 
@@ -197,9 +189,6 @@ contract RegistryEntry is ApproveAndCallFallBack {
     factsDb.transactUInt(voteId, "vote/option", uint(challenge.vote[_voter].option));
     factsDb.transactUInt(voteId, "vote/revealed-on", now);
 
-    registry.fireVoteRevealedEvent(version,
-                                   _voter,
-                                   uint(challenge.vote[_voter].option));
   }
 
   /**
@@ -230,7 +219,6 @@ contract RegistryEntry is ApproveAndCallFallBack {
     uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
     factsDb.transactUInt(voteId, "vote/reclaimed-amount-on", now);
 
-    registry.fireVoteAmountClaimedEvent(version, _voter);
   }
 
   /**
@@ -266,9 +254,6 @@ contract RegistryEntry is ApproveAndCallFallBack {
     uint voteId = uint(keccak256(abi.encodePacked(uint(this),"challenge",_voter)));
     factsDb.transactUInt(voteId, "vote/reclaimed-reward-on", now);
 
-    registry.fireVoteRewardClaimedEvent(version,
-                                        _voter,
-                                        reward);
   }
 
   /**
@@ -292,9 +277,7 @@ contract RegistryEntry is ApproveAndCallFallBack {
     factsDb.transactUInt(challengeId, "challenge/reclaimed-reward-on", now);
     factsDb.transactUInt(challengeId, "challenge/reclaimed-amount", challenge.challengeReward(deposit));
 
-    registry.fireChallengeRewardClaimedEvent(version,
-                                             challenge.challenger,
-                                             challenge.challengeReward(deposit));
+
   }
 
   /**
